@@ -6,19 +6,3 @@ channels:
 dependencies:
   - python=3.11
   - pip
-  - pip:
-      - openai
-      - langchain
-      - langchain-community
-      - langchain-core
-      - langchain-openai
-      - langchain-pinecone
-      - python-dotenv
-      - requests
-      - pandas
-      - numpy
-      - selenium
-      - beautifulsoup4
-      - pdfplumber
-      - llama-parse
-      - psycopg3

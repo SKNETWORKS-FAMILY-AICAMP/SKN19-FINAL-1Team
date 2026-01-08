@@ -31,6 +31,9 @@ conda env create -f environment.yml
 
 # 2. 가상환경 활성화
 conda activate final_env
+
+# 3. 라이브러리 설치
+pip install -r requirements.txt
 ```
 
 ## 기타
@@ -38,8 +41,8 @@ conda activate final_env
 # 가상환경 활성화
 conda activate final_env
 
-# pip 최신화
-python -m pip install --upgrade pip
+# requirements 최신화
+pip freeze > requirements.txt
 
 # conda 가상환경 삭제
 conda remove -n 삭제할가상환경 --all
