@@ -43,12 +43,12 @@ def main():
         # print("✅ 테이블 생성(또는 확인) 완료")
 
         # 데이터 전처리 및 적재 (INSERT)
+        # ON CONFLICT: 이미 같은 ID가 있으면 무시
         insert_query = """
         INSERT INTO notices (id, tag, title, content, created_at, modified_at)
         VALUES (%s, %s, %s, %s, %s, %s)
         ON CONFLICT (id) DO NOTHING; 
         """
-        # ON CONFLICT: 이미 같은 ID가 있으면 무시
 
         # JSON 파일의 모든 데이터를 순회하며 적재
         success_count = 0
