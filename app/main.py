@@ -1,7 +1,10 @@
 from fastapi import FastAPI
+from api.v1.routers import api_router
 
-app = FastAPI()
+app = FastAPI(
+    title = "CALL:ACT",
+    description = "API documentation",
+    version = "1.0.0",
+)
 
-@app.get("/hello")
-def hello():
-    return {"message": "hello world"}
+app.include_router(api_router, prefix="/api/v1")
