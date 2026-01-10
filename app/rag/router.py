@@ -44,6 +44,20 @@ def _build_processor(synonyms: Dict[str, List[str]]) -> KeywordProcessor:
             kp.add_keyword(term, canonical)
     return kp
 
+
+def _fallback_contains(synonyms: Dict[str, List[str]], text: str) -> List[str]:
+    hits = []
+    compact_text = text.replace(" ", "")
+    for canonical, terms in synonyms.items():
+        for term in [canonical, *terms]:
+            if not term:
+                continue
+            lowered = term.lower()
+            if lowered in text or lowered.replace(" ", "") in compact_text:
+                hits.append(canonical)
+                break
+    return hits
+
 # FlashText 프로세서 사전 생성 (모듈 로딩 시 1회)
 _CARD_KP = _build_processor(CARD_NAME_SYNONYMS)
 _ACTION_KP = _build_processor(ACTION_SYNONYMS)
@@ -57,6 +71,9 @@ def route_query(query: str) -> Dict[str, Optional[object]]:
     actions = _unique_in_order(_ACTION_KP.extract_keywords(normalized))
     payments = _unique_in_order(_PAYMENT_KP.extract_keywords(normalized))
     weak_intents = _unique_in_order(_WEAK_INTENT_KP.extract_keywords(normalized))
+
+    if not payments:
+        payments = _unique_in_order(_fallback_contains(PAYMENT_SYNONYMS, normalized))
 
     route = None
     filters: Dict[str, List[str]] = {}
