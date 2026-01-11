@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STT 웹소켓 테스트 (브라우저)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+
+        .controls {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #connectBtn {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        #connectBtn:hover:not(:disabled) {
+            background-color: #45a049;
+        }
+
+        #disconnectBtn {
+            background-color: #f44336;
+            color: white;
+        }
+
+        #disconnectBtn:hover:not(:disabled) {
+            background-color: #da190b;
+        }
+
+        #testBtn {
+            background-color: #2196F3;
+            color: white;
+        }
+
+        #testBtn:hover:not(:disabled) {
+            background-color: #0b7dda;
+        }
+
+        #recordBtn {
+            background-color: #ff9800;
+            color: white;
+        }
+
+        #recordBtn:hover:not(:disabled) {
+            background-color: #e68900;
+        }
+
+        #stopRecordBtn {
+            background-color: #9c27b0;
+            color: white;
+        }
+
+        #stopRecordBtn:hover:not(:disabled) {
+            background-color: #7b1fa2;
+        }
+
+        .status {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .status.connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.connecting {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+
+        #results {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+        }
+
+        .result-item {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 3px;
+            border-left: 4px solid;
+        }
+
+        .result-item.partial {
+            background-color: #e3f2fd;
+            border-color: #2196F3;
+        }
+
+        .result-item.final {
+            background-color: #e8f5e9;
+            border-color: #4CAF50;
+        }
+
+        .result-item.error {
+            background-color: #ffebee;
+            border-color: #f44336;
+        }
+
+        .result-label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .timestamp {
+            font-size: 12px;
+            color: #666;
+            float: right;
+        }
+
+        .config {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+        }
+
+        .config input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            box-sizing: border-box;
+        }
+
+        .info {
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #2196F3;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎤 STT 웹소켓 테스트 (브라우저)</h1>
+
+        <div class="info">
+            <strong>📌 사용 방법:</strong><br>
+            1. 서버 실행 중인지 확인 (python run_server.py)<br>
+            2. 서버 URL을 입력하거나 기본값 사용<br>
+            3. "연결" 버튼 클릭<br>
+            4. "더미 오디오 테스트" 또는 "마이크 녹음" 사용
+        </div>
+
+        <div class="config">
+            <label><strong>서버 URL:</strong></label>
+            <input type="text" id="serverUrl" value="ws://localhost:8000/api/v1/ws"
+                placeholder="ws://localhost:8000/api/v1/ws">
+        </div>
+
+        <div class="status disconnected" id="status">
+            상태: 연결 안 됨
+        </div>
+
+        <div class="controls">
+            <button id="connectBtn" onclick="connect()">연결</button>
+            <button id="disconnectBtn" onclick="disconnect()" disabled>연결 끊기</button>
+            <button id="testBtn" onclick="sendTestAudio()" disabled>더미 오디오 테스트</button>
+            <button id="recordBtn" onclick="startRecording()" disabled>마이크 녹음 시작</button>
+            <button id="stopRecordBtn" onclick="stopRecording()" disabled>녹음 중지</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        let ws = null;
+        let isRecording = false;
+        let mediaRecorder = null;
+        let audioContext = null;
+        let sourceNode = null;
+        let processorNode = null;
+
+        function updateStatus(text, className) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = `상태: ${text}`;
+            statusEl.className = `status ${className}`;
+        }
+
+        function addResult(type, message, data = null) {
+            const resultsDiv = document.getElementById('results');
+            const item = document.createElement('div');
+            item.className = `result-item ${type}`;
+            // type === 'partial' ? '📝 [Partial]' :
+            const label = type === 'final' ? '✅ [인식됨]' : '❌ [Error]';
+
+            const timestamp = new Date().toLocaleTimeString();
+
+            item.innerHTML = `
+                <span class="result-label">${label}</span>
+                ${message || (data?.transcript || data?.message || '')}
+                <span class="timestamp">${timestamp}</span>
+            `;
+
+            resultsDiv.appendChild(item);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        function connect() {
+            const url = document.getElementById('serverUrl').value;
+            if (!url) {
+                alert('서버 URL을 입력하세요');
+                return;
+            }
+
+            updateStatus('연결 중...', 'connecting');
+
+            try {
+                ws = new WebSocket(url);
+
+                ws.onopen = function () {
+                    updateStatus('연결됨', 'connected');
+                    document.getElementById('connectBtn').disabled = true;
+                    document.getElementById('disconnectBtn').disabled = false;
+                    document.getElementById('testBtn').disabled = false;
+                    document.getElementById('recordBtn').disabled = false;
+                    addResult('info', '✅ 웹소켓 연결 성공');
+                };
+
+                ws.onmessage = function (event) {
+                    try {
+                        const result = JSON.parse(event.data);
+                        const type = result.type || 'unknown';
+                        const message = result.transcript || result.message || '';
+
+                        if (type === 'partial') {
+                            // addResult('partial', message, result);
+                            ;
+                        } else if (type === 'final') {
+                            addResult('final', message, result);
+                            if (result.keywords) {
+                                addResult('info', `🔑 키워드: ${JSON.stringify(result.keywords)}`);
+                            }
+                        } else if (type === 'error') {
+                            addResult('error', message, result);
+                        } else {
+                            addResult('info', `알 수 없는 타입: ${JSON.stringify(result)}`);
+                        }
+                    } catch (e) {
+                        addResult('error', `JSON 파싱 오류: ${event.data}`);
+                    }
+                };
+
+                ws.onerror = function (error) {
+                    updateStatus('에러 발생', 'disconnected');
+                    addResult('error', `웹소켓 에러: ${error.message || '알 수 없는 오류'}`);
+                };
+
+                ws.onclose = function () {
+                    updateStatus('연결 끊김', 'disconnected');
+                    document.getElementById('connectBtn').disabled = false;
+                    document.getElementById('disconnectBtn').disabled = true;
+                    document.getElementById('testBtn').disabled = true;
+                    document.getElementById('recordBtn').disabled = true;
+                    document.getElementById('stopRecordBtn').disabled = true;
+                    addResult('info', '🔌 웹소켓 연결 종료');
+                };
+
+            } catch (error) {
+                updateStatus('연결 실패', 'disconnected');
+                addResult('error', `연결 실패: ${error.message}`);
+            }
+        }
+
+        function disconnect() {
+            if (ws) {
+                if (isRecording) {
+                    stopRecording();
+                }
+                ws.close();
+                ws = null;
+            }
+        }
+
+        function sendTestAudio() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                alert('먼저 웹소켓에 연결하세요');
+                return;
+            }
+
+            addResult('info', '📤 더미 오디오 전송 시작...');
+
+            const sampleRate = 16000;
+            const duration = 2.0; // 2초
+            const samples = Math.floor(sampleRate * duration);
+            const chunkDuration = 0.1; // 0.1초 단위
+            const chunkSamples = Math.floor(sampleRate * chunkDuration);
+
+            let sent = 0;
+            const totalChunks = Math.floor(samples / chunkSamples);
+
+            const interval = setInterval(() => {
+                if (ws.readyState !== WebSocket.OPEN) {
+                    clearInterval(interval);
+                    return;
+                }
+
+                // 440Hz 사인파 생성
+                const chunk = new Int16Array(chunkSamples);
+                const offset = sent * chunkSamples;
+                for (let i = 0; i < chunkSamples; i++) {
+                    const t = (offset + i) / sampleRate;
+                    chunk[i] = Math.sin(2 * Math.PI * 440 * t) * 32767;
+                }
+
+                ws.send(chunk.buffer);
+                sent++;
+
+                if (sent >= totalChunks) {
+                    clearInterval(interval);
+                    addResult('info', `✅ ${sent}개 청크 전송 완료 (더미 오디오는 인식되지 않을 수 있습니다)`);
+                }
+            }, 100); // 0.1초마다 전송
+        }
+
+        async function startRecording() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                alert('먼저 웹소켓에 연결하세요');
+                return;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        sampleRate: 16000,
+                        channelCount: 1,
+                        echoCancellation: true,
+                        noiseSuppression: true
+                    }
+                });
+
+                audioContext = new (window.AudioContext || window.webkitAudioContext)({
+                    sampleRate: 16000
+                });
+
+                sourceNode = audioContext.createMediaStreamSource(stream);
+                processorNode = audioContext.createScriptProcessor(4096, 1, 1);
+
+                processorNode.onaudioprocess = function (e) {
+                    if (!ws || ws.readyState !== WebSocket.OPEN || !isRecording) {
+                        return;
+                    }
+
+                    const inputData = e.inputBuffer.getChannelData(0);
+                    // Float32 (-1.0 ~ 1.0)를 Int16으로 변환
+                    const int16Array = new Int16Array(inputData.length);
+                    for (let i = 0; i < inputData.length; i++) {
+                        const s = Math.max(-1, Math.min(1, inputData[i]));
+                        int16Array[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                    }
+
+                    ws.send(int16Array.buffer);
+                };
+
+                sourceNode.connect(processorNode);
+                processorNode.connect(audioContext.destination);
+
+                isRecording = true;
+                document.getElementById('recordBtn').disabled = true;
+                document.getElementById('stopRecordBtn').disabled = false;
+                addResult('info', '🎤 마이크 녹음 시작 (말해보세요!)');
+
+            } catch (error) {
+                addResult('error', `마이크 접근 실패: ${error.message}`);
+                alert('마이크 접근 권한이 필요합니다');
+            }
+        }
+
+        function stopRecording() {
+            if (processorNode) {
+                processorNode.disconnect();
+                processorNode = null;
+            }
+            if (sourceNode) {
+                sourceNode.disconnect();
+                sourceNode = null;
+            }
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+
+            isRecording = false;
+            document.getElementById('recordBtn').disabled = false;
+            document.getElementById('stopRecordBtn').disabled = true;
+            addResult('info', '⏹️ 마이크 녹음 중지');
+        }
+    </script>
+</body>
+
+</html>
