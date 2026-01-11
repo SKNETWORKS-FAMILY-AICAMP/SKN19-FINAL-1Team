@@ -14,8 +14,11 @@ async def websocket_endpoint(websocket: WebSocket):
     whisper_service = WhisperService()
 
     # 결과 처리 콜백
-    async def on_transcription_result(text: str):
+    async def on_transcription_result(text: str, keyword_data: dict):
         print(f"[{session_id}] STT 결과: {text}")
+
+        if keyword_data:
+            print(f"[{session_id}] 키워드 감지 : {keyword_data}")
 
     # 서비스 시작
     loop = asyncio.get_running_loop()
