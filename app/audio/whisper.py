@@ -27,6 +27,7 @@ class WhisperService:
 
     def stop(self):
         # 작업 종료 및 자원 정리
+        print("작업 스레드 종료")
         self.running = False
         self.queue.put(None)  # 종료 신호 전송
         if self.thread:
@@ -38,6 +39,11 @@ class WhisperService:
 
     def _worker(self):
         print("작업 스레드 시작")
+
+        HALLUCINATION_KEYWORDS = [
+            "시청해주셔서", "시청해 주셔서", "구독과 좋아요", 
+            "재택 플러스", "MBC", "뉴스", "투데이", 
+        ]
         
         while self.running:
             try:
@@ -54,9 +60,20 @@ class WhisperService:
                     model="whisper-1",
                     file=audio_file,
                     language="ko",
-                    prompt="이것은 카드사 상담 대화입니다. 이 상황을 고려하지만 문장을 들리는 대로 적으세요"
+                    prompt="이것은 카드사 상담 대화입니다. 침묵 구간은 무시하세요. 이 상황을 고려하지만 문장을 들리는 대로 적으세요"
                 )
                 text = transcript.text.strip()
+
+                # 할루시네이션 방지
+                if not text:
+                    self.queue.task_done()
+                    continue
+
+                if any(keyword in text for keyword in HALLUCINATION_KEYWORDS):
+                    if len(text) < 20: 
+                        print(f"[할루시네이션 감지 및 제거] : {text}")
+                        self.queue.task_done()
+                        continue
 
                 # 비동기 콜백 함수를 메인 스케줄러에 등록
                 if text and self.callback:
