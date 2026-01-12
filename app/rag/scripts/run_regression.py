@@ -79,21 +79,26 @@ async def main() -> int:
     if args.limit:
         tests = tests[: args.limit]
 
+    from app.rag.cache.card_cache import close_redis_client
+
     failures = 0
-    for idx, test in enumerate(tests, 1):
-        query = test.get("query", "").strip()
-        if not query:
-            continue
-        ok, summary, _ = await run_case(
-            query=query,
-            config=config,
-            expect_route=test.get("expect_route"),
-            expect_should_route=test.get("expect_should_route"),
-        )
-        status = "PASS" if ok else "FAIL"
-        if not ok:
-            failures += 1
-        print(f"[{status}] {idx:02d}. {query} -> {summary}")
+    try:
+        for idx, test in enumerate(tests, 1):
+            query = test.get("query", "").strip()
+            if not query:
+                continue
+            ok, summary, _ = await run_case(
+                query=query,
+                config=config,
+                expect_route=test.get("expect_route"),
+                expect_should_route=test.get("expect_should_route"),
+            )
+            status = "PASS" if ok else "FAIL"
+            if not ok:
+                failures += 1
+            print(f"[{status}] {idx:02d}. {query} -> {summary}")
+    finally:
+        await close_redis_client()
 
     print(f"Done. total={len(tests)} fail={failures}")
     return 1 if failures else 0

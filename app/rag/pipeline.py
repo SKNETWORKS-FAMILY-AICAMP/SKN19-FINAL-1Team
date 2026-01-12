@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 import os
-import re
 import time
 from typing import Any, Dict, List, Optional
 
@@ -36,21 +35,6 @@ class RAGConfig:
 # --- 라우팅 ---
 def route(query: str) -> Dict[str, Any]:
     return route_query(query)
-
-
-# --- 안내 스크립트 정제 ---
-def _strict_guidance_script(script: str, docs: List[Dict[str, Any]]) -> str:
-    if not script:
-        return ""
-    content = " ".join(doc.get("content") or "" for doc in docs).strip()
-    if not content:
-        return ""
-    normalized_content = normalize_text(content)
-    sentences = [s.strip() for s in re.split(r"[.!?\\n]+", script) if s.strip()]
-    for sentence in sentences:
-        if normalize_text(sentence) not in normalized_content:
-            return ""
-    return script
 
 
 def _format_ms(seconds: float) -> str:
@@ -154,8 +138,6 @@ async def run_rag(query: str, config: Optional[RAGConfig] = None) -> Dict[str, A
             max_llm_cards=cfg.llm_card_top_n,
         )
     t_cards = time.perf_counter()
-    if cfg.strict_guidance_script:
-        guidance_script = _strict_guidance_script(guidance_script, docs)
     query_keywords = collect_query_keywords(query, routing, cfg.normalize_keywords)
     for card in cards:
         card["keywords"] = query_keywords

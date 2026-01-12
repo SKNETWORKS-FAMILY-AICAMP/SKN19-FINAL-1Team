@@ -417,14 +417,6 @@ def _safe_table(name: str) -> str:
     return name
 
 
-def _choose_table(filters: Dict[str, object]) -> str:
-    if filters.get("card_name"):
-        return "card_tbl"
-    if filters.get("intent") or filters.get("weak_intent"):
-        return "guide_tbl"
-    return "card_tbl"
-
-
 def embed_query(text: str, model: str = "text-embedding-3-small") -> List[float]:
     client = get_openai_client()
     resp = client.embeddings.create(model=model, input=text)

@@ -175,9 +175,8 @@ def generate_detail_cards(
     if not payload:
         return base_cards, ""
     parsed = payload.get("cards") if isinstance(payload, dict) else None
-    guidance_script = payload.get("guidanceScript") if isinstance(payload, dict) else ""
     if not isinstance(parsed, list):
-        return base_cards, guidance_script or ""
+        return base_cards, ""
 
     out = list(base_cards)
     for idx, base in enumerate(base_cards[:llm_count]):
@@ -188,4 +187,4 @@ def generate_detail_cards(
         merged["detailContent"] = base["detailContent"]
         merged["relevanceScore"] = base["relevanceScore"]
         out[idx] = merged
-    return out, guidance_script or ""
+    return out, ""

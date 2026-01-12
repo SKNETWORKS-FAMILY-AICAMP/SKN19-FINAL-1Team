@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Optional, Tuple
 
+import asyncio
 import copy
 import json
 import os
@@ -28,6 +29,28 @@ def _redis_client():
     if _REDIS_CLIENT is None:
         _REDIS_CLIENT = redis_async.from_url(REDIS_URL, decode_responses=True)
     return _REDIS_CLIENT
+
+
+async def close_redis_client() -> None:
+    global _REDIS_CLIENT
+    client = _REDIS_CLIENT
+    if not client:
+        return
+    _REDIS_CLIENT = None
+    try:
+        close_fn = getattr(client, "close", None)
+        if callable(close_fn):
+            result = close_fn()
+            if asyncio.iscoroutine(result):
+                await result
+    except Exception:
+        pass
+    try:
+        pool = getattr(client, "connection_pool", None)
+        if pool:
+            await pool.disconnect()
+    except Exception:
+        pass
 
 
 def _prune_card_cache(now: float) -> None:
