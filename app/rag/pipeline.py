@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import copy
 import os
 import re
 import time
@@ -10,6 +11,9 @@ from app.rag.router import route_query
 from app.rag.vocab.rules import STOPWORDS
 
 LOG_TIMING = os.getenv("RAG_LOG_TIMING", "1") != "0"
+CARD_CACHE_TTL_SEC = float(os.getenv("RAG_CARD_CACHE_TTL", "120"))
+CARD_CACHE_ENABLED = CARD_CACHE_TTL_SEC > 0 and os.getenv("RAG_CARD_CACHE", "1") != "0"
+_CARD_CACHE: Dict[tuple, tuple[float, List[Dict[str, Any]], str]] = {}
 
 
 # --- 설정 ---
@@ -22,7 +26,7 @@ class RAGConfig:
     include_docs: bool = True
     normalize_keywords: bool = False
     strict_guidance_script: bool = True
-    llm_card_top_n: int = 3
+    llm_card_top_n: int = 2
 
 
 # --- 라우팅 ---
@@ -249,6 +253,56 @@ def _format_ms(seconds: float) -> str:
     return f"{seconds * 1000:.1f}ms"
 
 
+def _prune_card_cache(now: float) -> None:
+    if not _CARD_CACHE:
+        return
+    expired = [key for key, (ts, _, _) in _CARD_CACHE.items() if now - ts > CARD_CACHE_TTL_SEC]
+    for key in expired:
+        _CARD_CACHE.pop(key, None)
+
+
+def _card_cache_key(
+    query: str,
+    routing: Dict[str, Any],
+    docs: List[Dict[str, Any]],
+    model: str,
+    llm_card_top_n: int,
+) -> tuple:
+    doc_ids = tuple(str(doc.get("id") or "") for doc in docs)
+    query_template = routing.get("query_template") or ""
+    return (
+        model,
+        llm_card_top_n,
+        routing.get("route") or "",
+        _normalize_text(query_template),
+        _normalize_text(query),
+        doc_ids,
+    )
+
+
+def _card_cache_get(key: tuple) -> Optional[tuple[List[Dict[str, Any]], str]]:
+    if not CARD_CACHE_ENABLED:
+        return None
+    now = time.time()
+    _prune_card_cache(now)
+    entry = _CARD_CACHE.get(key)
+    if not entry:
+        return None
+    ts, cards, guidance_script = entry
+    if now - ts > CARD_CACHE_TTL_SEC:
+        _CARD_CACHE.pop(key, None)
+        return None
+    return copy.deepcopy(cards), guidance_script
+
+
+def _card_cache_set(key: tuple, cards: List[Dict[str, Any]], guidance_script: str) -> None:
+    if not CARD_CACHE_ENABLED:
+        return
+    now = time.time()
+    _prune_card_cache(now)
+    _CARD_CACHE[key] = (now, copy.deepcopy(cards), guidance_script)
+
+
 # --- 검색 ---
 async def retrieve(
     query: str,
@@ -319,13 +373,33 @@ async def run_rag(query: str, config: Optional[RAGConfig] = None) -> Dict[str, A
     t_retrieve = time.perf_counter()
     if routing.get("route") == "card_info":
         docs = _promote_definition_doc(docs)
-    cards, guidance_script = generate_detail_cards(
-        query=query,
-        docs=docs,
-        model=cfg.model,
-        temperature=0.0,
-        max_llm_cards=cfg.llm_card_top_n,
-    )
+    cache_status = "off"
+    cards: List[Dict[str, Any]]
+    guidance_script: str
+    if CARD_CACHE_ENABLED and cfg.llm_card_top_n > 0:
+        cache_key = _card_cache_key(query, routing, docs, cfg.model, cfg.llm_card_top_n)
+        cached = _card_cache_get(cache_key)
+        if cached:
+            cards, guidance_script = cached
+            cache_status = "hit"
+        else:
+            cards, guidance_script = generate_detail_cards(
+                query=query,
+                docs=docs,
+                model=cfg.model,
+                temperature=0.0,
+                max_llm_cards=cfg.llm_card_top_n,
+            )
+            _card_cache_set(cache_key, cards, guidance_script)
+            cache_status = "miss"
+    else:
+        cards, guidance_script = generate_detail_cards(
+            query=query,
+            docs=docs,
+            model=cfg.model,
+            temperature=0.0,
+            max_llm_cards=cfg.llm_card_top_n,
+        )
     t_cards = time.perf_counter()
     if cfg.strict_guidance_script:
         guidance_script = _strict_guidance_script(guidance_script, docs)
@@ -338,6 +412,7 @@ async def run_rag(query: str, config: Optional[RAGConfig] = None) -> Dict[str, A
 
     if LOG_TIMING:
         total = t_post - t_start
+        cache_label = f" cache={cache_status}" if cache_status != "off" else ""
         print(
             "[rag] "
             f"route={_format_ms(t_route - t_start)} "
@@ -345,7 +420,7 @@ async def run_rag(query: str, config: Optional[RAGConfig] = None) -> Dict[str, A
             f"cards={_format_ms(t_cards - t_retrieve)} "
             f"post={_format_ms(t_post - t_cards)} "
             f"total={_format_ms(total)} "
-            f"docs={len(docs)} route={routing.get('route')}"
+            f"docs={len(docs)} route={routing.get('route')}{cache_label}"
         )
 
     response = {
