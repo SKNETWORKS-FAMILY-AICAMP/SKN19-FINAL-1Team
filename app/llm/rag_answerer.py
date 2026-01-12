@@ -19,7 +19,7 @@ DEFAULT_TEMPERATURE = 0.2
 DEFAULT_MAX_CONTEXT_CHARS = 1600
 MIN_BODY_CHARS = 60
 DEFAULT_SOURCES_HEADER = "[출처]"
-MAX_CARD_DOC_CHARS = 1200
+MAX_CARD_DOC_CHARS = 600
 CARD_RETRY_BACKOFF_SEC = 0.6
 
 
@@ -111,10 +111,9 @@ def _build_card_prompt(query: str, docs: List[Dict[str, Any]]) -> str:
     doc_count = len(docs)
     return (
         "다음은 카드 상담용 문서입니다. 사용자 질문과 문서 내용을 참고해 카드 상세 정보를 생성하세요.\n"
-        "정확한 정보가 없으면 합리적인 상담 시나리오를 간단히 구성해도 됩니다.\n"
         "반드시 JSON 객체만 반환하세요. 추가 텍스트는 금지합니다.\n"
         f"카드 수는 {doc_count}개이며, 같은 순서로 cards 배열을 채우세요.\n"
-        "모든 카드에 모든 필드를 채우되, 알 수 없으면 빈 문자열/빈 배열로 채우세요.\n\n"
+        "모든 필드는 문서에서 확인 가능한 경우에만 채우고, 없으면 빈 값으로 두세요.\n\n"
         f"[사용자 질문]\n{query}\n\n"
         "[문서]\n"
         f"{joined}\n\n"
@@ -125,20 +124,20 @@ def _build_card_prompt(query: str, docs: List[Dict[str, Any]]) -> str:
         "      \"id\": \"문서 id 그대로\",\n"
         "      \"title\": \"문서 title 그대로\",\n"
         "      \"keywords\": [\"#키워드1\", \"#키워드2\"],\n"
-        "      \"content\": \"사용자에게 보여줄 1~2문장 요약\",\n"
-        "      \"systemPath\": \"업무 경로(없으면 빈 문자열)\",\n"
-        "      \"requiredChecks\": [\"필수 확인사항\"],\n"
-        "      \"exceptions\": [\"예외 사항\"],\n"
-        "      \"regulation\": \"관련 규정/약관(없으면 빈 문자열)\",\n"
-        "      \"time\": \"처리 시간(없으면 빈 문자열)\",\n"
-        "      \"note\": \"추가 메모(없으면 빈 문자열)\"\n"
+        "      \"content\": \"1~2문장 요약\",\n"
+        "      \"systemPath\": \"\",\n"
+        "      \"requiredChecks\": [],\n"
+        "      \"exceptions\": [],\n"
+        "      \"regulation\": \"\",\n"
+        "      \"time\": \"\",\n"
+        "      \"note\": \"\"\n"
         "    }\n"
         "  ],\n"
-        "  \"guidanceScript\": \"상담원이 읽을 간단 스크립트(없으면 빈 문자열)\"\n"
+        "  \"guidanceScript\": \"\"\n"
         "}\n"
         "\n"
-        "[추가 규칙]\n"
-        "- guidanceScript는 문서에서 그대로 발췌한 문장만 사용하세요.\n"
+        "[규칙]\n"
+        "- guidanceScript는 항상 빈 문자열로 유지하세요.\n"
         "- 문서에 없는 내용은 절대 추가하지 마세요.\n"
     )
 
