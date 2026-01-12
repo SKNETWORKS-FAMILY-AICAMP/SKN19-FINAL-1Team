@@ -64,24 +64,27 @@ def _build_card_prompt(query: str, docs: List[Dict[str, Any]]) -> str:
     joined = "\n\n".join(parts) if parts else "문서 없음"
     doc_count = len(docs)
     return (
-        "다음은 카드 상담용 문서입니다. 사용자 질문과 문서 내용을 참고해 카드 요약(content)만 생성하세요.\n"
-        "반드시 JSON 객체만 반환하세요. 추가 텍스트는 금지합니다.\n"
-        f"카드 수는 {doc_count}개이며, 같은 순서로 cards 배열을 채우세요.\n"
-        "각 card는 content 필드만 포함하세요. 문서에 없는 내용은 쓰지 마세요.\n\n"
-        f"[사용자 질문]\n{query}\n\n"
-        "[문서]\n"
-        f"{joined}\n\n"
-        "[JSON 스키마]\n"
-        "{\n"
-        "  \"cards\": [\n"
-        "    {\"content\": \"1~2문장 요약\"}\n"
-        "  ]\n"
-        "}\n"
-        "\n"
-        "[규칙]\n"
-        "- 문서에 없는 내용은 절대 추가하지 마세요.\n"
-        "- content 외의 필드는 출력하지 마세요.\n"
-    )
+        f"""다음은 카드 상담용 문서입니다. 사용자 질문과 문서 내용을 참고해 카드 요약(content)만 생성하세요.
+
+            ### 지시 사항
+            1. 반드시 아래 제공된 JSON 객체 형식만 반환하세요. 추가 텍스트는 금지합니다.
+            2. 카드 수는 총 {doc_count}개이며, 문서의 순서와 동일하게 cards 배열을 구성하세요.
+            3. 각 요약은 1~2문장으로 작성하며, 문서에 없는 내용은 절대 포함하지 마세요.
+            4. content 외의 필드는 출력하지 마세요.
+
+            ### 사용자 질문
+            {query}
+
+            ### 상담 문서 내용
+            {joined}
+
+            ### 출력 형식 (JSON Schema)
+            {{
+            "cards": [
+                {{ "content": "카드 요약 내용 1-2문장" }}
+            ]
+            }}"""
+        )
 
 
 def _parse_cards_payload(text: str) -> Optional[Dict[str, Any]]:
@@ -138,8 +141,8 @@ def generate_detail_cards(
         {
             "role": "system",
             "content": (
-                "너는 카드 상담 업무용 카드 생성기다. "
-                "문서 내용과 사용자 질문을 기반으로 카드 정보를 생성한다."
+                "당신은 카드사 상담 업무용 카드 생성기입니다. "
+                "문서 내용과 사용자 질문을 기반으로 카드 정보를 생성합니다."
             ),
         },
         {"role": "user", "content": prompt},
