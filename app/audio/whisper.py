@@ -60,7 +60,6 @@ class WhisperService:
                     model="whisper-1",
                     file=audio_file,
                     language="ko",
-                    prompt="이것은 카드사 상담 대화입니다. 침묵 구간은 무시하세요. 이 상황을 고려하지만 문장을 들리는 대로 적으세요"
                 )
                 text = transcript.text.strip()
 
