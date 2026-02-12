@@ -4,13 +4,6 @@
 
 LLM을 활용한 내부 고객 업무 효율성 향상을 위한 문서 검색 시스템
 
-[![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.128-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![React](https://img.shields.io/badge/React-18.3-61DAFB?logo=react&logoColor=black)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
-
 ---
 
 ## 목차
@@ -30,17 +23,19 @@ LLM을 활용한 내부 고객 업무 효율성 향상을 위한 문서 검색 �
 
 ## 1. 팀 소개
 
-### 1팀 레디테디
-> *"항상 내 얘기를 들어주는 테디 베어처럼"*
+<div align="center">
 
-**SK Networks Family AI Camp 19기 Final Project**
+### 레디테디
 
-| 이름 | 역할 |
-|:---:|:---:|
-| **박소희** | RAG 문서 검색, 인프라 구축 |
-| **배상준** | 키워드 추출, 교육 시뮬레이션 |
-| **안수이** | STT 설계, 후처리 & 피드백, 인프라 구축 |
-| **오흥재** | DB 구축 및 관리, 프론트엔드 |
+*"항상 내 얘기를 들어주는 테디 베어처럼"*
+  
+| **박소희** | **배상준** | **안수이** | **오흥재** |
+|:---:|:---:|:---:|:---:|
+| <img width="108" height="108" alt="image" src="https://github.com/user-attachments/assets/ef0628b2-d087-418b-a018-7f9c5c325b88" /> | <img width="108" height="108" alt="image" src="https://github.com/user-attachments/assets/a53f0da4-f30c-4b2e-af34-404f88c40bec" /> | <img width="108" height="108" alt="image" src="https://github.com/user-attachments/assets/6456c1e9-77bf-4141-9dfe-390efd3c9836" /> | <img width="108" height="108" alt="image" src="https://github.com/user-attachments/assets/0f6a25c8-78c5-4613-bf7a-5c344e83a2f1" /> |
+| [![GitHub](https://img.shields.io/badge/GitHub-xxoysauce-2496ED?logo=github&logoColor=white)](https://github.com/xxoysauce) | [![GitHub](https://img.shields.io/badge/GitHub-WindyAle-2496ED?logo=github&logoColor=white)](https://github.com/WindyAle) | [![GitHub](https://img.shields.io/badge/GitHub-ahnsui-2496ED?logo=github&logoColor=white)](https://github.com/ahnsui) | [![GitHub](https://img.shields.io/badge/GitHub-vfxpedia-2496ED?logo=github&logoColor=white)](https://github.com/vfxpedia) |
+| RAG 문서 검색<br>인프라 구축 | 키워드 추출<br>교육 시뮬레이션 | STT 설계<br>후처리 & 피드백<br>인프라 구축 | DB 구축 및 관리<br>프론트엔드 |
+
+</div>
 
 ---
 
